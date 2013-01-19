@@ -421,7 +421,7 @@ module Saasu
           http.use_ssl     = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          puts "Request URL (GET) is #{uri.request_uri}" 
+          #puts "Request URL (GET) is #{uri.request_uri}" 
 
           response = http.request(Net::HTTP::Get.new(uri.request_uri))
           response.body
@@ -433,7 +433,7 @@ module Saasu
           http.use_ssl = true;
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          puts "Request URL (POST) is #{uri.request_uri}"
+          #puts "Request URL (POST) is #{uri.request_uri}"
 
           post = Net::HTTP::Post.new(uri.request_uri)
 
@@ -514,7 +514,7 @@ module Saasu
           http.use_ssl = true;
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          puts "Request URL (DELETE) is #{uri.request_uri}"
+          #puts "Request URL (DELETE) is #{uri.request_uri}"
 
           del = Net::HTTP::Delete.new(uri.request_uri)
           xml = Nokogiri.XML(http.request(del).body)
