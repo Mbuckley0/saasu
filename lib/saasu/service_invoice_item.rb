@@ -5,7 +5,9 @@ module Saasu
     elements  "description" => :string,
               "accountUid" => :integer,
               "taxCode" => :string,
-              "totalAmountInclTax" => :decimal
+              "totalAmountInclTax" => :decimal,
+              "totalAmountExclTax" => :decimal,
+              "totalTaxAmount" => :decimal
   end
   
 end

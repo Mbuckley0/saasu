@@ -29,7 +29,8 @@ module Saasu
             "totalAmountInclTax" => :decimal,
             "totalAmountExclTax" => :decimal,
             "totalTaxAmount" => :decimal,
-            "isSent" => :boolean
+            "isSent" => :boolean,
+            "tags" => :string
   end
   
 end

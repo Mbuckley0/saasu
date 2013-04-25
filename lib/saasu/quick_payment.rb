@@ -4,7 +4,7 @@ module Saasu
     root "quickPayment"
 
     elements  "datePaid" => :date,
-              "dateCleared" = :date,
+              "dateCleared" => :date,
               "bankedToAccountUid" => :integer,
               "amount" => :decimal,
               "reference" => :string,
