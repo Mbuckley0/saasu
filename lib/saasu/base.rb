@@ -264,9 +264,27 @@ module Saasu
 
         new(xml.root)
       end
+      
+      # Fetch the PDF of an invoice by its uid
+      # @param [Integer] the uid
+      #
+      def get_pdf(uid, template_uid = nil)
+        options_hash = Hash.new.tap do |h|
+          h[:uid] = uid
+          h[:format] = "pdf"
+          h[:templateUid] = template_uid if template_uid.present?
+        end
+          
+        response = get(options_hash, false)
+        #File.open("invoice.pdf", "wb") { |file| file.write get(options_hash, false) }
+      end
 
       def insert(entity)
         post({ :entity => entity, :task => :insert })
+      end
+      
+      def insert_and_email(entity, email, template_uid = nil)
+        post({ :entity => entity, :task => :insert, :email => email, :send_email => true, :template_uid => template_uid })
       end
 
       def update(entity)
@@ -439,11 +457,20 @@ module Saasu
 
           doc = Nokogiri::XML::Document.new
           node = doc.add_child("<task>")
-          node.add_child("<#{options[:task].to_s + klass_name.camelize} />")
+          entity_node = Nokogiri::XML::Node.new("#{options[:task].to_s + klass_name.camelize}",doc)
+          
+          if options[:send_email]
+            entity_node['emailToContact'] = "true" 
+            entity_node['templateUid']= options[:template_uid].to_i     
+          end
+          
+          node.add_child(entity_node)
           node.child.add_child(options[:entity].to_xml.root)
-
+          node.child.add_child(options[:email].to_xml.root) if options[:send_email]
           post.body = doc.to_xml(:encoding => "utf-8")
-
+          
+          #puts post.body
+          
           xml = Nokogiri.XML(http.request(post).body)
 
           match = "#{options[:task].to_s + klass_name.camelize}Result";
