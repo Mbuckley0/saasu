@@ -7,9 +7,9 @@ module Saasu
               "familyName" => :string,
               "dateOfBirth" => :date,
 
-              # only these 2 when fetching all it seems 
-              "organisation" => :string, 
-              "organisationUid" => :integer, 
+              # only these 2 when fetching all it seems
+              "organisation" => :string,
+              "organisationUid" => :integer,
 
               "organisationName" => :string,
               "organisationAbn" => :string,
@@ -18,7 +18,7 @@ module Saasu
               "contactID" => :string,
               "abn" => :string,
               "websiteUrl" => :string,
-              "email" => :string,           
+              "email" => :string,
               "email_address" => :string,     # really! it's not consistant
               "mainPhone" => :string,
               "homePhone" => :string,
@@ -51,8 +51,8 @@ module Saasu
               "purchaseTradingTermsPaymentDueInInterval" => :integer,
               "purchaseTradingTermsPaymentDueInIntervalType" => :integer,
               "defaultSaleDiscount" => :decimal,
-              "defaultPurchaseDiscount" => :decimal
-
+              "defaultPurchaseDiscount" => :decimal,
+              "error" => :string
   end
 end
- 
+
