@@ -461,12 +461,18 @@ module Saasu
           
           if options[:send_email]
             entity_node['emailToContact'] = "true" 
-            entity_node['templateUid']= options[:template_uid].to_i     
+            #entity_node['templateUid']= options[:template_uid].to_i
+            template_node = Nokogiri::XML::Node.new('templateUid',doc)
+            template_node.content = options[:template_uid]   
           end
           
           node.add_child(entity_node)
           node.child.add_child(options[:entity].to_xml.root)
+          
+          # for invoice emailing support
           node.child.add_child(options[:email].to_xml.root) if options[:send_email]
+          node.child.add_child(template_node) if options[:send_email]
+          
           post.body = doc.to_xml(:encoding => "utf-8")
           
           #puts post.body
