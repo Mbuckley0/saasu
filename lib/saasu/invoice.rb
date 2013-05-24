@@ -30,6 +30,9 @@ module Saasu
             "totalAmountExclTax" => :decimal,
             "totalTaxAmount" => :decimal,
             "isSent" => :boolean
+
+    required_fields %w(uid lastUpdatedUid), :only => :update
+    required_fields %w(transactionType invoiceType date layout status)
   end
-  
+
 end

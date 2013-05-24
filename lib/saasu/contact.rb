@@ -53,6 +53,8 @@ module Saasu
               "defaultSaleDiscount" => :decimal,
               "defaultPurchaseDiscount" => :decimal,
               "error" => :string
+
+    required_fields %w(uid lastUpdatedUid), :only => :update
   end
 end
 

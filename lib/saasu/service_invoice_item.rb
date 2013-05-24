@@ -8,6 +8,8 @@ module Saasu
               "totalAmountInclTax"  => :decimal,
               "totalAmountExclTax"  => :decimal,
               "totalTaxAmount"      => :decimal
+
+    required_fields %w(accountUid totalAmountInclTax)
   end
 
 end

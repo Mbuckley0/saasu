@@ -140,39 +140,42 @@ module Saasu
         else
           "<#{node_name}>#{node_inner_data}</#{node_name}>"
         end
-      end 
+      end
     end
-   
+
+
+
     class << self
-   
+
       attr_accessor :class_root
       attr_accessor :class_attributes
       attr_accessor :class_elements
+      attr_accessor :class_required
 
       # @param [String] the API key
       #
       def api_key=(key)
         @@api_key = key
       end
-      
+
       # Return the API key
       #
       def api_key
         @@api_key
       end
-      
+
       # @param [Integer] the file_uid
       #
       def file_uid=(uid)
         @@file_uid = uid
       end
-      
+
       # Returns the file_uid
       #
       def file_uid
         @@file_uid
       end
-      
+
       # Returns all resources matching the supplied conditions
       # @param [Hash] conditions for the request
       #
@@ -234,7 +237,8 @@ module Saasu
         end
         collection
       end
-      
+
+      alias_method :where, :all
       # Finds a specific resource by its uid
       # @param [Integer] the uid
       #
@@ -267,18 +271,22 @@ module Saasu
         new(xml.root)
       end
 
-      def insert(entity)
-        post({ :entity => entity, :task => :insert })
-      end
+      [:insert, :update].each do |method|
+        define_method method do |entity|
+          entity = validate_presence(entity, method)
 
-      def update(entity)
-        post({ :entity => entity, :task => :update })
+          unless entity.errors.any?
+            post({ :entity => entity, :task => method })
+          else
+            entity
+          end
+        end
       end
 
       def delete(uid)
         _delete(uid)
       end
-      
+
       # Allows defaults for the object to be set.
       # Generally the class name will be suitable and options will not need to be provided
       # @param [Hash] options to override the default settings
@@ -291,9 +299,29 @@ module Saasu
           @defaults
         end
       end
-       
+
+      def validate_presence(entity, task)
+        set           = entity.class.class_required[:all].dup || []
+        entity.errors = []
+
+        set.concat(entity.class.class_required[task] || []).uniq! if task
+
+        unless set.nil?
+          set.each do |required|
+            if entity.send(required).to_s.strip == ""
+              error         = ErrorInfo.new
+              error.message = "#{required.camelize(:lower)} field is required."
+              error.type    = "MissingFieldError"
+              entity.errors << error
+            end
+          end
+        end
+
+        entity
+      end
+
       protected
-        
+
         # Default options for the class
         #
         def default_options
@@ -567,8 +595,18 @@ module Saasu
           self.name.split("::")[1].camelize(:lower)
         end
 
+        def required_fields(fields, opts = {:only => :all})
+          @class_required               ||= {}
+          @class_required[opts[:only]]  ||= []
+          fields.each do |field|
+            field = field.underscore
+            @class_required[opts[:only]] << field if instance_methods.include? field.to_sym
+          end
+        end
     end
-    
+
   end
 
 end
+
+class MissingFieldError < StandardError; end
