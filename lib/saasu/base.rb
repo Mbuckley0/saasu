@@ -86,8 +86,8 @@ module Saasu
         attributes = attributes.merge(self.class.class_attributes)
       end
 
-      attributes.each do |k, v| 
-        node["#{k}"] = send(k.underscore).to_s
+      attributes.each do |k, v|
+        node["#{k}"] = send(k.underscore).to_s unless v.nil?
       end
 
       elements = {}
@@ -102,25 +102,27 @@ module Saasu
 
       unless elements.nil? || elements.empty?
         elements.each do |k, v|
-          if v.eql? :array
-            ap = node.add_child(wrap_xml(k.camelize(:lower)))
-            if ap.is_a? Nokogiri::XML::NodeSet
-              ap = ap.first()
-            end
-            array = send(k.underscore)
-            unless array.nil? || array.empty?
-              array.each() do |e|
-                ap.add_child( e.to_xml.root )
+          unless send(k.underscore).nil?
+            if v.eql? :array
+              ap = node.add_child(wrap_xml(k.camelize(:lower)))
+              if ap.is_a? Nokogiri::XML::NodeSet
+                ap = ap.first()
               end
-            end
-          elsif STANDARD_TYPES.include?(v)
-            node.add_child(wrap_xml(k.camelize(:lower), send(k.underscore)))
-          else
-            o = send(k.underscore)
-            unless o.nil?
-              node.add_child(o.to_xml().root)
+              array = send(k.underscore)
+              unless array.nil? || array.empty?
+                array.each() do |e|
+                  ap.add_child( e.to_xml.root )
+                end
+              end
+            elsif STANDARD_TYPES.include?(v)
+              node.add_child(wrap_xml(k.camelize(:lower), send(k.underscore)))
             else
-              node.add_child(wrap_xml(k.camelize(:lower)))
+              o = send(k.underscore)
+              unless o.nil?
+                node.add_child(o.to_xml().root)
+              else
+                node.add_child(wrap_xml(k.camelize(:lower)))
+              end
             end
           end
         end
