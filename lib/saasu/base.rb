@@ -69,10 +69,10 @@ module Saasu
       end
 
       node = doc.add_child( root_xml )
- 
+
       attributes = {}
 
-      if is_a? Entity 
+      if is_a? Entity
         attributes = Entity.class_attributes
       elsif is_a? InsertResult
         attributes = InsertResult.class_attributes
@@ -131,8 +131,8 @@ module Saasu
       doc
     end
 
-    def wrap_xml(node_name, node_inner_data = nil) 
-      if node_inner_data.nil? 
+    def wrap_xml(node_name, node_inner_data = nil)
+      if node_inner_data.nil?
         "<#{node_name}></#{node_name}>"
       else
         if (node_inner_data.is_a? Date) || (node_inner_data.is_a? DateTime)
@@ -143,14 +143,14 @@ module Saasu
       end
     end
 
-
-
     class << self
 
       attr_accessor :class_root
       attr_accessor :class_attributes
       attr_accessor :class_elements
       attr_accessor :class_required
+      attr_accessor :class_request_url
+      attr_accessor :class_list_item
 
       # @param [String] the API key
       #
@@ -180,12 +180,12 @@ module Saasu
       # @param [Hash] conditions for the request
       #
       def all(options = {})
-        response = get(options)
-        xml      = Nokogiri::XML(response)
+        options[:request_url] = @class_request_url
+        response              = get(options)
+        xml                   = Nokogiri::XML(response)
+        klass_list_item       = @class_list_item || "#{klass_name}ListItem"
 
-        klass_list_item = "#{klass_name}ListItem"
-
-        xsl = 
+        xsl =
           "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:template match=\"*\">
               <xsl:copy>
@@ -263,7 +263,7 @@ module Saasu
          </xsl:stylesheet>"
 
 
-        #print "#{xml.to_s}\n" 
+        #print "#{xml.to_s}\n"
 
         xslt = Nokogiri::XSLT.parse(xsl)
         xml = xslt.transform(xml)
@@ -361,7 +361,7 @@ module Saasu
         def define_accessor(element, type)
           m = element
           case type
-          when :string 
+          when :string
             class_eval <<-END
               def #{m}=(v)
                 @#{m} = v
@@ -382,7 +382,7 @@ module Saasu
                       @#{m} = Date.parse(v)
                     end
                   elsif v.is_a? Date
-                    @#{m} = v 
+                    @#{m} = v
                   else
                     raise TypeError, 'Expecting Date or String'
                   end
@@ -411,10 +411,10 @@ module Saasu
             class_eval <<-END
               def #{m}=(v)
                 if v.is_a? Nokogiri::XML::Node
-                  @#{m} = v.children.to_a().map {|node| 
+                  @#{m} = v.children.to_a().map {|node|
                     Saasu.const_get(node.node_name().camelize).new(node)
                   }
-                elsif v.is_a? Array 
+                elsif v.is_a? Array
                   @#{m} = v
                 else
                   raise TypeError, 'Expecting an Array or XML Node'
@@ -426,13 +426,13 @@ module Saasu
               def #{m}=(v)
                 if v.is_a? Base
                   @#{m} = v
-                else 
+                else
                   @#{m} = Saasu.const_get(:#{type}).new(v)
                 end
               end
             END
           end
-         
+
           # creates read accessor
           class_eval <<-END
             def #{m}
@@ -451,7 +451,7 @@ module Saasu
           http.use_ssl     = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          puts "Request URL (GET) is #{uri.request_uri}" 
+          puts "Request URL (GET) is #{uri.request_uri}"
 
           response = http.request(Net::HTTP::Get.new(uri.request_uri))
           response.body
@@ -478,7 +478,7 @@ module Saasu
 
           match = "#{options[:task].to_s + klass_name.camelize}Result";
 
-          xsl = 
+          xsl =
             "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:template match=\"/tasksResponse\">
                 <xsl:apply-templates />
@@ -515,15 +515,15 @@ module Saasu
               errors = xml.root.css("error").map() do |e|
                 ErrorInfo.new(e)
               end
-            elsif (!xml.root.child.nil?) && 
+            elsif (!xml.root.child.nil?) &&
                   (xml.root.child.name.eql? "errors")
               errors = xml.root.child.css("error").map() do |e|
                 ErrorInfo.new(e)
               end
             end
           end
-         
-          begin 
+
+          begin
             klass_lookup = match.camelize
             klass = Saasu.const_get(klass_lookup.to_sym)
             result = klass.new(errors.nil? ? xml : nil)
@@ -538,7 +538,7 @@ module Saasu
           result
         end
 
-        def _delete(uid) 
+        def _delete(uid)
           uri = URI.parse(request_path({:uid => uid}, false))
           http = Net::HTTP.new(uri.host, uri.port)
           http.use_ssl = true;
@@ -548,7 +548,7 @@ module Saasu
 
           del = Net::HTTP::Delete.new(uri.request_uri)
           xml = Nokogiri.XML(http.request(del).body)
-          xsl = 
+          xsl =
             "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:output method=\"html\" />
             <xsl:template match=\"/#{klass_name}Response\">
@@ -581,9 +581,10 @@ module Saasu
         def url_encode_hash(hash = {})
           hash.map { |k, v| "#{k.to_s.gsub(/_/, "")}=#{(v.is_a? Date) ? v.to_saasu_iso8601 : v}"}.join("&")
         end
-        
+
         def request_path(options = {}, all = true)
-          path = (all == true ? defaults[:collection_name].sub(/Item/, "") : defaults[:resource_name])
+          path = options[:request_url] || (all ? defaults[:collection_name].sub(/Item/, "") : defaults[:resource_name])
+          options.delete(:request_url)
           ENDPOINT + "/#{path}?#{query_string(options)}"
         end
 
@@ -602,6 +603,14 @@ module Saasu
             field = field.underscore
             @class_required[opts[:only]] << field if instance_methods.include? field.to_sym
           end
+        end
+
+        def request_url(url)
+          @class_request_url = url
+        end
+
+        def list_item(item)
+          @class_list_item = item
         end
     end
 
