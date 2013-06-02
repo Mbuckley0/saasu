@@ -38,4 +38,3 @@ module Saasu
   end
 
 end
-
