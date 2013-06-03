@@ -221,19 +221,18 @@ module Saasu
             </xsl:template>
           </xsl:stylesheet>"
 
-        xslt = Nokogiri::XSLT.parse(xsl)
-        xml = xslt.transform(xml)
-
-        #print "#{xml.to_s()}\n"
-
-        #File.open("#{klass_list_item}.xml".underscore, 'w') { |f| f.write(xml.to_s()) }
-
-        nodes = xml.css(klass_list_item)
-
-        collection = nodes.inject([]) do |result, item|
-          klass = Saasu.const_get(klass_list_item.camelize(:upper).to_sym)
-          result << klass.new(item)
-          result
+        xslt    = Nokogiri::XSLT.parse(xsl)
+        xml     = xslt.transform(xml)
+        @errors = build_errors(xml)
+        if @errors.nil?
+          nodes = xml.css(klass_list_item)
+          collection = nodes.inject([]) do |result, item|
+            klass = Saasu.const_get(klass_list_item.camelize(:upper).to_sym)
+            result << klass.new(item)
+            result
+          end
+        else
+          collection = @errors
         end
         collection
       end
@@ -507,22 +506,9 @@ module Saasu
 
           #puts "post transform:\n #{xml.to_s}"
 
-          errors = nil
+          errors = build_errors(xml)
 
           # [CHRISK] wow! so many ways we can get errors presented
-          unless xml.root.nil?
-            if xml.root.name.eql? "errors"
-              errors = xml.root.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
-            elsif (!xml.root.child.nil?) &&
-                  (xml.root.child.name.eql? "errors")
-              errors = xml.root.child.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
-            end
-          end
-
           begin
             klass_lookup = match.camelize
             klass = Saasu.const_get(klass_lookup.to_sym)
@@ -611,6 +597,23 @@ module Saasu
 
         def list_item(item)
           @class_list_item = item
+        end
+
+        def build_errors(xml)
+          unless xml.root.nil?
+            if xml.root.name.eql? "errors"
+              errors = xml.root.css("error").map() do |e|
+                ErrorInfo.new(e)
+              end
+            elsif (!xml.root.child.nil?) &&
+                  (xml.root.child.name.eql? "errors")
+              errors = xml.root.child.css("error").map() do |e|
+                ErrorInfo.new(e)
+              end
+            else
+              nil
+            end
+          end
         end
     end
 
