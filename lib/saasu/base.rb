@@ -272,12 +272,23 @@ module Saasu
 
       [:insert, :update].each do |method|
         define_method method do |entity|
-          entity = validate_presence(entity, method)
+          has_errors = false
 
-          unless entity.errors.any?
-            post({ :entity => entity, :task => method })
+          if entity.is_a? Array
+            entity.each do |item|
+              binding.pry
+              item       = validate_presence(item, method)
+              has_errors = has_errors or item.errors.any?
+            end
           else
+            entity     = validate_presence(entity, method)
+            has_errors = entity.errors.any?
+          end
+
+          if has_errors
             entity
+          else
+            post({ :entity => entity, :task => method })
           end
         end
       end
@@ -300,7 +311,7 @@ module Saasu
       end
 
       def validate_presence(entity, task)
-        set           = entity.class.class_required[:all].dup || []
+        set           = entity.class.class_required[:all].dup || [] rescue []
         entity.errors = []
 
         set.concat(entity.class.class_required[task] || []).uniq! if task
@@ -330,7 +341,7 @@ module Saasu
           options[:collection_name] = name.split("::").last.downcase + "ListItem"
           options
         end
-       
+
         def root(name)
           @class_root = name
         end
@@ -468,13 +479,21 @@ module Saasu
 
           doc = Nokogiri::XML::Document.new
           node = doc.add_child("<task>")
-          node.add_child("<#{options[:task].to_s + klass_name.camelize} />")
-          node.child.add_child(options[:entity].to_xml.root)
+          task_name = "<#{options[:task].to_s + klass_name.camelize} />"
+
+          if options[:entity].is_a? Array
+            options[:entity].each do |entity|
+              task_node = node.add_child(task_name)
+              task_node.first.add_child(entity.to_xml.root)
+            end
+          else
+            node.add_child(task_name)
+            node.child.add_child(options[:entity].to_xml.root)
+          end
 
           post.body = doc.to_xml(:encoding => "utf-8")
 
           xml = Nokogiri.XML(http.request(post).body)
-
           match = "#{options[:task].to_s + klass_name.camelize}Result";
 
           xsl =
