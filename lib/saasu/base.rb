@@ -276,7 +276,6 @@ module Saasu
 
           if entity.is_a? Array
             entity.each do |item|
-              binding.pry
               item       = validate_presence(item, method)
               has_errors = has_errors or item.errors.any?
             end
@@ -314,7 +313,7 @@ module Saasu
         set           = entity.class.class_required[:all].dup || [] rescue []
         entity.errors = []
 
-        set.concat(entity.class.class_required[task] || []).uniq! if task
+        set.concat(entity.class.class_required[task] || []).uniq! if task and entity.class.class_required
 
         unless set.nil?
           set.each do |required|
