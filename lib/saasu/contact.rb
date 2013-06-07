@@ -55,6 +55,7 @@ module Saasu
               "error" => :string
 
     required_fields %w(uid lastUpdatedUid), :only => :update
+    class_response_list "contact"
   end
 end
 

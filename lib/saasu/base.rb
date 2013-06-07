@@ -151,6 +151,7 @@ module Saasu
       attr_accessor :class_required
       attr_accessor :class_request_url
       attr_accessor :class_list_item
+      attr_accessor :class_response_list
 
       # @param [String] the API key
       #
@@ -184,6 +185,7 @@ module Saasu
         response              = get(options)
         xml                   = Nokogiri::XML(response)
         klass_list_item       = @class_list_item || "#{klass_name}ListItem"
+        class_response_list   = @class_response_list || klass_list_item
 
         xsl =
           "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
@@ -227,7 +229,7 @@ module Saasu
         if @errors.nil?
           nodes = xml.css(klass_list_item)
           collection = nodes.inject([]) do |result, item|
-            klass = Saasu.const_get(klass_list_item.camelize(:upper).to_sym)
+            klass = Saasu.const_get(class_response_list.camelize(:upper).to_sym)
             result << klass.new(item)
             result
           end
@@ -285,7 +287,7 @@ module Saasu
           end
 
           if has_errors
-            entity
+            entity.merge({:errors => has_errors})
           else
             post({ :entity => entity, :task => method })
           end
@@ -617,17 +619,14 @@ module Saasu
           @class_list_item = item
         end
 
+        def class_response_list(item)
+          @class_response_list = item
+        end
+
         def build_errors(xml)
           unless xml.root.nil?
-            if xml.root.name.eql? "errors"
-              errors = xml.root.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
-            elsif (!xml.root.child.nil?) &&
-                  (xml.root.child.name.eql? "errors")
-              errors = xml.root.child.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
+            if xml.search('errors').present?
+              errors = xml.children.css("error").map { |e| ErrorInfo.new(e) }
             else
               nil
             end
