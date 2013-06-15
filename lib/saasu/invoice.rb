@@ -2,6 +2,8 @@ module Saasu
   
   class Invoice < Transaction
 
+    attr_accessor :pdf
+
     elements "transactionType" => :string,
             "invoiceType" => :string,
             "date" => :string,
@@ -31,6 +33,32 @@ module Saasu
             "totalTaxAmount" => :decimal,
             "isSent" => :boolean,
             "tags" => :string
+    
+    class << self
+      # Fetch the PDF of an invoice by its uid
+      # @param [Integer] the uid
+      #
+      def get_pdf(uid, template_uid = nil)
+        options_hash = Hash.new.tap do |h|
+          h[:uid] = uid
+          h[:format] = "pdf"
+          h[:templateUid] = template_uid if template_uid.present?
+        end
+ 
+        pdf = get(options_hash, false)
+        response = new
+        if pdf.is_a? Net::HTTPNotFound
+          e = ErrorInfo.new
+          e.type = "NotFound"
+          e.message = "The invoice specified was not found"
+          response.errors = e
+        else
+          response.pdf = pdf
+        end
+
+        response
+      end
+    end
   end
   
 end

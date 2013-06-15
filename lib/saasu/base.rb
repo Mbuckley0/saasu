@@ -31,7 +31,6 @@ module Saasu
     end
 
     def construct_from_xml(xml)
-
       if xml.is_a? Nokogiri::XML::Document
         node = xml.root
       else
@@ -261,22 +260,26 @@ module Saasu
 
         xslt = Nokogiri::XSLT.parse(xsl)
         xml = xslt.transform(xml)
-
-        new(xml.root)
-      end
-      
-      # Fetch the PDF of an invoice by its uid
-      # @param [Integer] the uid
-      #
-      def get_pdf(uid, template_uid = nil)
-        options_hash = Hash.new.tap do |h|
-          h[:uid] = uid
-          h[:format] = "pdf"
-          h[:templateUid] = template_uid if template_uid.present?
+        
+        unless xml.root.nil?
+          if xml.root.name.eql? "errors"
+            errors = xml.root.css("error").map() do |e|
+              ErrorInfo.new(e)
+            end
+          elsif (!xml.root.child.nil?) && 
+                (xml.root.child.name.eql? "errors")
+            errors = xml.root.child.css("error").map() do |e|
+              ErrorInfo.new(e)
+            end
+          end
         end
-          
-        response = get(options_hash, false)
-        #File.open("invoice.pdf", "wb") { |file| file.write get(options_hash, false) }
+        
+        result = new(errors.nil? ? xml.root : nil)
+        
+        result.errors = errors
+        result
+        
+        #new(xml.root)
       end
 
       def insert(entity)
@@ -442,7 +445,12 @@ module Saasu
           #puts "Request URL (GET) is #{uri.request_uri}" 
 
           response = http.request(Net::HTTP::Get.new(uri.request_uri))
-          response.body
+          
+          if response.is_a? Net::HTTPNotFound
+            response #getting PDF invoice not found returns 404
+          else
+            response.body
+          end
         end
 
         def post(options)
@@ -551,24 +559,45 @@ module Saasu
 
           del = Net::HTTP::Delete.new(uri.request_uri)
           xml = Nokogiri.XML(http.request(del).body)
-          xsl = 
-            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
-            <xsl:output method=\"html\" />
-            <xsl:template match=\"/#{klass_name}Response\">
-                <xsl:apply-templates />
-            </xsl:template>
-            <xsl:template match=\"*\">
-              <xsl:copy>
-                <xsl:copy-of select=\"@*\" />
-                <xsl:apply-templates />
-              </xsl:copy>
-            </xsl:template>
-         </xsl:stylesheet>"
 
+          xsl = 
+          "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
+              <xsl:template match=\"/#{klass_name}Response\">
+                  <xsl:apply-templates />
+              </xsl:template>
+              <xsl:template match=\"text()\">
+                <xsl:value-of select=\"normalize-space(.)\"/>
+              </xsl:template>
+              <xsl:template match=\"*\">
+                <xsl:copy>
+                  <xsl:copy-of select=\"@*\" />
+                  <xsl:apply-templates />
+                </xsl:copy>
+              </xsl:template>
+           </xsl:stylesheet>"
+            
           xslt = Nokogiri::XSLT.parse(xsl)
           xml = xslt.transform(xml)
-
-          Saasu::DeleteResult.new(xml.root)
+          
+          unless xml.root.nil?
+            if xml.root.name.eql? "errors"
+              errors = xml.root.css("error").map() do |e|
+                ErrorInfo.new(e)
+              end
+            elsif (!xml.root.child.nil?) && 
+                  (xml.root.child.name.eql? "errors")
+              errors = xml.root.child.css("error").map() do |e|
+                ErrorInfo.new(e)
+              end
+            end
+          end
+        
+          result = Saasu::DeleteResult.new(errors.nil? ? xml.root : nil)
+        
+          result.errors = errors
+          result
+          
+          #Saasu::DeleteResult.new(xml.root)
         end
 
         def query_string(options = {})
