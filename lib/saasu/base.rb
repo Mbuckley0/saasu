@@ -625,7 +625,7 @@ module Saasu
 
         def build_errors(xml)
           unless xml.root.nil?
-            if xml.search('errors').present?
+            if xml.search('errors').any?
               errors = xml.children.css("error").map { |e| ErrorInfo.new(e) }
             else
               nil
