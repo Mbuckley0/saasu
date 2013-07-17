@@ -285,10 +285,6 @@ module Saasu
       def insert(entity)
         post({ :entity => entity, :task => :insert })
       end
-      
-      def insert_and_email(entity, email, template_uid = nil)
-        post({ :entity => entity, :task => :insert, :email => email, :send_email => true, :template_uid => template_uid })
-      end
 
       def update(entity)
         post({ :entity => entity, :task => :update })

@@ -58,6 +58,11 @@ module Saasu
 
         response
       end
+      
+      def insert_and_email(entity, email, template_uid = nil)
+        post({ :entity => entity, :task => :insert, :email => email, :send_email => true, :template_uid => template_uid })
+      end
+      
     end
   end
   
