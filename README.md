@@ -1,6 +1,12 @@
 # Saasu
 
-This gem provide a ruby wrapper to the Saasu api.
+This gem provide a ruby wrapper to the Saasu api. 
+
+# History 
+
+Originally started by Keiran Johnson this version of the Saasu library was forked and is now maintained by 
+[Agworld Pty Ltd](http://www.agworld.co). It has a significant number of new features including creating
+and updating of Saasu entities. 
 
 ## Installation
 
@@ -33,6 +39,6 @@ To fetch a single invoice by its uid
     
 ## Copyright
 
-Copyright (c) 2012 Agworld Pty Ltd. See LICENSE for details.
+Copyright (c) 2013 Agworld Pty Ltd. See LICENSE for details.
 
-Copyright (c) 2011 Kieran Johnson.
+Original Portions - Copyright (c) 2011 Kieran Johnson.

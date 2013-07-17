@@ -1,38 +1,42 @@
 module Saasu
-  
+
   class Invoice < Transaction
 
     attr_accessor :pdf
 
-    elements "transactionType" => :string,
-            "invoiceType" => :string,
-            "date" => :string,
-            "contactUid" => :string,
-            "shipToContactUid" => :integer,
-            "folderUid" => :integer,
-            "tags" => :string,
-            "reference" => :string,
-            "summary" => :string,
-            "ccy" => :string,
-            "autoPopulateFxRate" => :boolean,
-            "fcToBxFxRate" => :decimal,
-            "notes" => :string,
-            "externalNotes" => :string,
-            "requiresFollowUp" => :boolean,
-            "dueOrExpiryDate" => :date,
-            "tradingTerms" => :TradingTerms,
-            "layout" => :string,
-            "status" => :string,
-            "invoiceNumber" => :string,
+    elements "transactionType"    => :string,
+            "invoiceType"         => :string,
+            "date"                => :string,
+            "contactUid"          => :string,
+            "shipToContactUid"    => :integer,
+            "folderUid"           => :integer,
+            "tags"                => :string,
+            "reference"           => :string,
+            "summary"             => :string,
+            "ccy"                 => :string,
+            "autoPopulateFxRate"  => :boolean,
+            "fcToBxFxRate"        => :decimal,
+            "notes"               => :string,
+            "externalNotes"       => :string,
+            "requiresFollowUp"    => :boolean,
+            "dueOrExpiryDate"     => :date,
+            "tradingTerms"        => :TradingTerms,
+            "layout"              => :string,
+            "status"              => :string,
+            "invoiceNumber"       => :string,
             "purchaseOrderNumber" => :string,
-            "invoiceItems" => :array,
-            "quickPayment" => :array,
-            "payments" => :array,
-            "totalAmountInclTax" => :decimal,
-            "totalAmountExclTax" => :decimal,
-            "totalTaxAmount" => :decimal,
-            "isSent" => :boolean,
-            "tags" => :string
+            "invoiceItems"        => :array,
+            "quickPayment"        => :array,
+            "payments"            => :array,
+            "totalAmountInclTax"  => :decimal,
+            "totalAmountExclTax"  => :decimal,
+            "totalTaxAmount"      => :decimal,
+            "isSent"              => :boolean,
+            "tags"                => :string
+    
+    required_fields %w(uid lastUpdatedUid), :only => :update
+    required_fields %w(transactionType invoiceType date layout status)
+    defaults :query_options => { :transaction_type => "s" }
     
     class << self
       # Fetch the PDF of an invoice by its uid
@@ -63,7 +67,6 @@ module Saasu
         post({ :entity => entity, :task => :insert, :email => email, :send_email => true, :template_uid => template_uid })
       end
       
-    end
+    end #class
   end
-  
 end
