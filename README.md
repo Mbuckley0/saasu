@@ -107,13 +107,14 @@ To add an invoice
     # of to just insert the invoice
     response = Saasu::Invoice.insert(i)
 
-To retreive a pfd of an invoice
+To retrieve a pdf of an invoice
 
     Saasu::Invoice.get_pdf(uid_of_invoice, uid_of_email_template)
     
 ## Copyright
 
 Some portions Copyright (c) 2013 Reuben Salagaras
+
 Copyright (c) 2013 Agworld Pty Ltd. See LICENSE for details.
 
 Original Portions - Copyright (c) 2011 Kieran Johnson.
