@@ -21,6 +21,8 @@ module Saasu
       :boolean,
       :array
     ]
+    
+    DEBUG_MESSAGES = false #turn on to see XML requests etc.
 
     attr_accessor :errors
 
@@ -479,7 +481,7 @@ module Saasu
           http.use_ssl     = true
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          #puts "Request URL (GET) is #{uri.request_uri}"
+          puts "Request URL (GET) is #{uri.request_uri}" if DEBUG_MESSAGES
 
           response = http.request(Net::HTTP::Get.new(uri.request_uri))
           
@@ -496,7 +498,7 @@ module Saasu
           http.use_ssl = true;
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          #puts "Request URL (POST) is #{uri.request_uri}"
+          puts "Request URL (POST) is #{uri.request_uri}" if DEBUG_MESSAGES
 
           post = Net::HTTP::Post.new(uri.request_uri)
 
@@ -538,7 +540,7 @@ module Saasu
 
           post.body = doc.to_xml(:encoding => "utf-8")
           
-          #puts post.body
+          puts post.body if DEBUG_MESSAGES
           
           xml = Nokogiri.XML(http.request(post).body)
           match = "#{options[:task].to_s + klass_name.camelize}Result";
@@ -565,12 +567,12 @@ module Saasu
             </xsl:template>
          </xsl:stylesheet>"
 
-          #puts "pre transform:\n #{xml.to_s}"
+          puts "pre transform:\n #{xml.to_s}" if DEBUG_MESSAGES
 
           xslt = Nokogiri::XSLT.parse(xsl)
           xml = xslt.transform(xml)
 
-          #puts "post transform:\n #{xml.to_s}"
+          puts "post transform:\n #{xml.to_s}" if DEBUG_MESSAGES
 
           errors = build_errors(xml)
 
@@ -596,7 +598,7 @@ module Saasu
           http.use_ssl = true;
           http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          #puts "Request URL (DELETE) is #{uri.request_uri}"
+          puts "Request URL (DELETE) is #{uri.request_uri}" if DEBUG_MESSAGES
 
           del = Net::HTTP::Delete.new(uri.request_uri)
           xml = Nokogiri.XML(http.request(del).body)

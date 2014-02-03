@@ -36,7 +36,7 @@ module Saasu
     
     required_fields %w(uid lastUpdatedUid), :only => :update
     required_fields %w(transactionType invoiceType date layout status)
-    defaults :query_options => { :transaction_type => "s" }
+    defaults :query_options => { :transaction_type => "s", :incpayments => true }
     
     class << self
       # Fetch the PDF of an invoice by its uid
