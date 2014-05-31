@@ -306,7 +306,8 @@ module Saasu
           end
 
           if has_errors
-            entity.merge({:errors => has_errors})
+            #entity.merge({:errors => has_errors})
+            entity
           else
             post({ :entity => entity, :task => method })
           end
