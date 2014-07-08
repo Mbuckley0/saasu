@@ -1,11 +1,4 @@
-source :rubygems
+source 'https://rubygems.org'
 
-gem "nokogiri"
-gem "activesupport", ">= 2.3.2"
-
-group :development do
-  gem "bundler" 
-  gem "jeweler"
-  gem "rspec"
-  gem "yard"
-end
+# Specify your gem's dependencies in youtrack.gemspec
+gemspec

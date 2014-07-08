@@ -4,24 +4,25 @@ module Saasu
     def to_saasu_iso8601()
       strftime("%FT%R")
     end
+
     def to_saasu()
       strftime("%F")
     end
   end
 
   class Base
-    
+
     ENDPOINT = "https://secure.saasu.com/webservices/rest/r1"
 
     STANDARD_TYPES = [
-      :string,
-      :decimal,
-      :date,
-      :integer,
-      :boolean,
-      :array
+        :string,
+        :decimal,
+        :date,
+        :integer,
+        :boolean,
+        :array
     ]
-    
+
     DEBUG_MESSAGES = false #turn on to see XML requests etc.
 
     attr_accessor :errors
@@ -69,7 +70,7 @@ module Saasu
         root_xml = wrap_xml(self.class.name.split("::")[1].camelize(:lower))
       end
 
-      node = doc.add_child( root_xml )
+      node = doc.add_child(root_xml)
 
       attributes = {}
 
@@ -112,7 +113,7 @@ module Saasu
               array = send(k.underscore)
               unless array.nil? || array.empty?
                 array.each() do |e|
-                  ap.add_child( e.to_xml.root )
+                  ap.add_child(e.to_xml.root)
                 end
               end
             elsif STANDARD_TYPES.include?(v)
@@ -183,13 +184,13 @@ module Saasu
       #
       def all(options = {})
         options[:request_url] = @class_request_url
-        response              = get(options)
-        xml                   = Nokogiri::XML(response)
-        klass_list_item       = @class_list_item || "#{klass_name}ListItem"
-        class_response_list   = @class_response_list || klass_list_item
+        response = get(options)
+        xml = Nokogiri::XML(response)
+        klass_list_item = @class_list_item || "#{klass_name}ListItem"
+        class_response_list = @class_response_list || klass_list_item
 
         xsl =
-          "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:template match=\"*\">
               <xsl:copy>
                 <xsl:copy-of select=\"@*\" />
@@ -224,8 +225,8 @@ module Saasu
             </xsl:template>
           </xsl:stylesheet>"
 
-        xslt    = Nokogiri::XSLT.parse(xsl)
-        xml     = xslt.transform(xml)
+        xslt = Nokogiri::XSLT.parse(xsl)
+        xml = xslt.transform(xml)
         @errors = build_errors(xml)
         if @errors.nil?
           nodes = xml.css(klass_list_item)
@@ -249,7 +250,7 @@ module Saasu
         xml = Nokogiri::XML(response)
 
         xsl =
-        "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
+            "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:template match=\"/#{klass_name}Response\">
                 <xsl:apply-templates />
             </xsl:template>
@@ -269,25 +270,25 @@ module Saasu
 
         xslt = Nokogiri::XSLT.parse(xsl)
         xml = xslt.transform(xml)
-        
+
         unless xml.root.nil?
           if xml.root.name.eql? "errors"
             errors = xml.root.css("error").map() do |e|
               ErrorInfo.new(e)
             end
-          elsif (!xml.root.child.nil?) && 
-                (xml.root.child.name.eql? "errors")
+          elsif (!xml.root.child.nil?) &&
+              (xml.root.child.name.eql? "errors")
             errors = xml.root.child.css("error").map() do |e|
               ErrorInfo.new(e)
             end
           end
         end
-        
+
         result = new(errors.nil? ? xml.root : nil)
-        
+
         result.errors = errors
         result
-        
+
         #new(xml.root)
       end
 
@@ -297,11 +298,11 @@ module Saasu
 
           if entity.is_a? Array
             entity.each do |item|
-              item       = validate_presence(item, method)
+              item = validate_presence(item, method)
               has_errors = has_errors or item.errors.any?
             end
           else
-            entity     = validate_presence(entity, method)
+            entity = validate_presence(entity, method)
             has_errors = entity.errors.any?
           end
 
@@ -309,7 +310,7 @@ module Saasu
             #entity.merge({:errors => has_errors})
             entity
           else
-            post({ :entity => entity, :task => method })
+            post({:entity => entity, :task => method})
           end
         end
       end
@@ -332,7 +333,7 @@ module Saasu
       end
 
       def validate_presence(entity, task)
-        set           = entity.class.class_required[:all].dup || [] rescue []
+        set = entity.class.class_required[:all].dup || [] rescue []
         entity.errors = []
 
         set.concat(entity.class.class_required[task] || []).uniq! if task and entity.class.class_required
@@ -340,9 +341,9 @@ module Saasu
         unless set.nil?
           set.each do |required|
             if entity.send(required).to_s.strip == ""
-              error         = ErrorInfo.new
+              error = ErrorInfo.new
               error.message = "#{required.camelize(:lower)} field is required."
-              error.type    = "MissingFieldError"
+              error.type = "MissingFieldError"
               entity.errors << error
             end
           end
@@ -353,45 +354,45 @@ module Saasu
 
       protected
 
-        # Default options for the class
-        #
-        def default_options
-          options                   = {}
-          options[:query_options]   ||= {}
-          options[:resource_name]   = name.split("::").last.downcase
-          options[:collection_name] = name.split("::").last.downcase + "ListItem"
-          options
-        end
+      # Default options for the class
+      #
+      def default_options
+        options = {}
+        options[:query_options] ||= {}
+        options[:resource_name] = name.split("::").last.downcase
+        options[:collection_name] = name.split("::").last.downcase + "ListItem"
+        options
+      end
 
-        def root(name)
-          @class_root = name
-        end
+      def root(name)
+        @class_root = name
+      end
 
-        def attributes(attributes = {})
-          attributes.each do |k,v|
-            define_accessor(k.underscore, v)
-          end
-          class_eval <<-END
+      def attributes(attributes = {})
+        attributes.each do |k, v|
+          define_accessor(k.underscore, v)
+        end
+        class_eval <<-END
             def has_attributes?
               true
             end
-          END
-          @class_attributes = attributes
-        end
+        END
+        @class_attributes = attributes
+      end
 
-        # Defines the fields for a resource and any transformations
-        # @param [Hash] key/value pair of field name and object type
-        #
-        def elements(elements = {})
-          elements.each do |k,v|
-            define_accessor(k.underscore, v)
-          end
-          @class_elements = elements
+      # Defines the fields for a resource and any transformations
+      # @param [Hash] key/value pair of field name and object type
+      #
+      def elements(elements = {})
+        elements.each do |k, v|
+          define_accessor(k.underscore, v)
         end
+        @class_elements = elements
+      end
 
-        def define_accessor(element, type)
-          m = element
-          case type
+      def define_accessor(element, type)
+        m = element
+        case type
           when :string
             class_eval <<-END
               def #{m}=(v)
@@ -462,91 +463,91 @@ module Saasu
                 end
               end
             END
-          end
+        end
 
-          # creates read accessor
-          class_eval <<-END
+        # creates read accessor
+        class_eval <<-END
             def #{m}
               @#{m}
             end
-          END
+        END
+      end
+
+      # Makes the request to saasu
+      # @param [Hash] options for the request
+      # @param [Boolean] toggles searching between collection and a singular resource
+      #
+      def get(options = {}, all = true)
+        uri = URI.parse(request_path(options, all))
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+        puts "Request URL (GET) is #{uri.request_uri}" if DEBUG_MESSAGES
+
+        response = http.request(Net::HTTP::Get.new(uri.request_uri))
+
+        if response.is_a? Net::HTTPNotFound
+          response #getting PDF invoice not found returns 404
+        else
+          response.body
         end
-        
-        # Makes the request to saasu
-        # @param [Hash] options for the request
-        # @param [Boolean] toggles searching between collection and a singular resource
-        #
-        def get(options = {}, all = true)
-          uri              = URI.parse(request_path(options, all))
-          http             = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl     = true
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      end
 
-          puts "Request URL (GET) is #{uri.request_uri}" if DEBUG_MESSAGES
+      def post(options)
+        uri = URI.parse(task_path())
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true;
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          response = http.request(Net::HTTP::Get.new(uri.request_uri))
-          
-          if response.is_a? Net::HTTPNotFound
-            response #getting PDF invoice not found returns 404
-          else
-            response.body
-          end
-        end
+        puts "Request URL (POST) is #{uri.request_uri}" if DEBUG_MESSAGES
 
-        def post(options)
-          uri = URI.parse(task_path())
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true;
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        post = Net::HTTP::Post.new(uri.request_uri)
 
-          puts "Request URL (POST) is #{uri.request_uri}" if DEBUG_MESSAGES
+        doc = Nokogiri::XML::Document.new
+        node = doc.add_child("<task>")
 
-          post = Net::HTTP::Post.new(uri.request_uri)
-
-          doc = Nokogiri::XML::Document.new
-          node = doc.add_child("<task>")
-          
-          if options[:entity].is_a? Array
-            options[:entity].each do |entity|
-              entity_node = Nokogiri::XML::Node.new("#{options[:task].to_s + klass_name.camelize}",doc)
-              if options[:send_email]
-                entity_node['emailToContact'] = "true" 
-                #entity_node['templateUid']= options[:template_uid].to_i
-                template_node = Nokogiri::XML::Node.new('templateUid',doc)
-                template_node.content = options[:template_uid]   
-              end
-              
-              task_node = node.add_child(entity_node)
-              task_node.add_child(entity.to_xml.root)
-              
-              # for invoice emailing support
-              task_node.add_child(options[:email].to_xml.root) if options[:send_email]
-              task_node.add_child(template_node) if options[:send_email]
-            end
-          else
-            entity_node = Nokogiri::XML::Node.new("#{options[:task].to_s + klass_name.camelize}",doc)
+        if options[:entity].is_a? Array
+          options[:entity].each do |entity|
+            entity_node = Nokogiri::XML::Node.new("#{options[:task].to_s + klass_name.camelize}", doc)
             if options[:send_email]
-              entity_node['emailToContact'] = "true" 
+              entity_node['emailToContact'] = "true"
               #entity_node['templateUid']= options[:template_uid].to_i
-              template_node = Nokogiri::XML::Node.new('templateUid',doc)
-              template_node.content = options[:template_uid]   
+              template_node = Nokogiri::XML::Node.new('templateUid', doc)
+              template_node.content = options[:template_uid]
             end
+
             task_node = node.add_child(entity_node)
-            task_node.add_child(options[:entity].to_xml.root)
-            
+            task_node.add_child(entity.to_xml.root)
+
             # for invoice emailing support
             task_node.add_child(options[:email].to_xml.root) if options[:send_email]
             task_node.add_child(template_node) if options[:send_email]
           end
+        else
+          entity_node = Nokogiri::XML::Node.new("#{options[:task].to_s + klass_name.camelize}", doc)
+          if options[:send_email]
+            entity_node['emailToContact'] = "true"
+            #entity_node['templateUid']= options[:template_uid].to_i
+            template_node = Nokogiri::XML::Node.new('templateUid', doc)
+            template_node.content = options[:template_uid]
+          end
+          task_node = node.add_child(entity_node)
+          task_node.add_child(options[:entity].to_xml.root)
 
-          post.body = doc.to_xml(:encoding => "utf-8")
-          
-          puts post.body if DEBUG_MESSAGES
-          
-          xml = Nokogiri.XML(http.request(post).body)
-          match = "#{options[:task].to_s + klass_name.camelize}Result";
+          # for invoice emailing support
+          task_node.add_child(options[:email].to_xml.root) if options[:send_email]
+          task_node.add_child(template_node) if options[:send_email]
+        end
 
-          xsl =
+        post.body = doc.to_xml(:encoding => "utf-8")
+
+        puts post.body if DEBUG_MESSAGES
+
+        xml = Nokogiri.XML(http.request(post).body)
+        match = "#{options[:task].to_s + klass_name.camelize}Result";
+
+        xsl =
             "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:template match=\"/tasksResponse\">
                 <xsl:apply-templates />
@@ -568,42 +569,42 @@ module Saasu
             </xsl:template>
          </xsl:stylesheet>"
 
-          puts "pre transform:\n #{xml.to_s}" if DEBUG_MESSAGES
+        puts "pre transform:\n #{xml.to_s}" if DEBUG_MESSAGES
 
-          xslt = Nokogiri::XSLT.parse(xsl)
-          xml = xslt.transform(xml)
+        xslt = Nokogiri::XSLT.parse(xsl)
+        xml = xslt.transform(xml)
 
-          puts "post transform:\n #{xml.to_s}" if DEBUG_MESSAGES
+        puts "post transform:\n #{xml.to_s}" if DEBUG_MESSAGES
 
-          errors = build_errors(xml)
+        errors = build_errors(xml)
 
-          # [CHRISK] wow! so many ways we can get errors presented
-          begin
-            klass_lookup = match.camelize
-            klass = Saasu.const_get(klass_lookup.to_sym)
-            result = klass.new(errors.nil? ? xml : nil)
-          rescue NameError
-            if (options[:task].eql? :update)
-              result = UpdateResult.new(errors.nil? ? xml : nil)
-            elsif (options[:task].eql? :insert)
-              result = InsertResult.new(errors.nil? ? xml : nil)
-            end
+        # [CHRISK] wow! so many ways we can get errors presented
+        begin
+          klass_lookup = match.camelize
+          klass = Saasu.const_get(klass_lookup.to_sym)
+          result = klass.new(errors.nil? ? xml : nil)
+        rescue NameError
+          if (options[:task].eql? :update)
+            result = UpdateResult.new(errors.nil? ? xml : nil)
+          elsif (options[:task].eql? :insert)
+            result = InsertResult.new(errors.nil? ? xml : nil)
           end
-          result.errors = errors
-          result
         end
+        result.errors = errors
+        result
+      end
 
-        def _delete(uid)
-          uri = URI.parse(request_path({:uid => uid}, false))
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true;
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      def _delete(uid)
+        uri = URI.parse(request_path({:uid => uid}, false))
+        http = Net::HTTP.new(uri.host, uri.port)
+        http.use_ssl = true;
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-          puts "Request URL (DELETE) is #{uri.request_uri}" if DEBUG_MESSAGES
+        puts "Request URL (DELETE) is #{uri.request_uri}" if DEBUG_MESSAGES
 
-          del = Net::HTTP::Delete.new(uri.request_uri)
-          xml = Nokogiri.XML(http.request(del).body)
-          xsl =
+        del = Net::HTTP::Delete.new(uri.request_uri)
+        xml = Nokogiri.XML(http.request(del).body)
+        xsl =
             "<xsl:stylesheet version=\"1.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">
             <xsl:output method=\"html\" />
             <xsl:template match=\"/#{klass_name}Response\">
@@ -617,92 +618,93 @@ module Saasu
             </xsl:template>
          </xsl:stylesheet>"
 
-          xslt = Nokogiri::XSLT.parse(xsl)
-          xml = xslt.transform(xml)
-          
-          unless xml.root.nil?
-            if xml.root.name.eql? "errors"
-              errors = xml.root.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
-            elsif (!xml.root.child.nil?) && 
-                  (xml.root.child.name.eql? "errors")
-              errors = xml.root.child.css("error").map() do |e|
-                ErrorInfo.new(e)
-              end
+        xslt = Nokogiri::XSLT.parse(xsl)
+        xml = xslt.transform(xml)
+
+        unless xml.root.nil?
+          if xml.root.name.eql? "errors"
+            errors = xml.root.css("error").map() do |e|
+              ErrorInfo.new(e)
             end
-          end
-        
-          result = Saasu::DeleteResult.new(errors.nil? ? xml.root : nil)
-        
-          result.errors = errors
-          result
-          
-          #Saasu::DeleteResult.new(xml.root)
-        end
-
-        def query_string(options = {})
-          options = defaults[:query_options].merge(options)
-          options = auth_params().merge(options)
-          url_encode_hash(options)
-        end
-
-        def auth_params()
-          { :wsaccesskey => api_key, :fileuid => file_uid }
-        end
-
-        def url_encode_hash(hash = {})
-          hash.map { |k, v| "#{k.to_s.gsub(/_/, "")}=#{(v.is_a? Date) ? v.to_saasu_iso8601 : v}"}.join("&")
-        end
-
-        def request_path(options = {}, all = true)
-          path = options[:request_url] || (all ? defaults[:collection_name].sub(/Item/, "") : defaults[:resource_name])
-          options.delete(:request_url)
-          ENDPOINT + "/#{path}?#{query_string(options)}"
-        end
-
-        def task_path()
-          ENDPOINT + "/Tasks?#{url_encode_hash(auth_params())}"
-        end
-
-        def klass_name()
-          self.name.split("::")[1].camelize(:lower)
-        end
-
-        def required_fields(fields, opts = {:only => :all})
-          @class_required               ||= {}
-          @class_required[opts[:only]]  ||= []
-          fields.each do |field|
-            field = field.underscore
-            @class_required[opts[:only]] << field if instance_methods.include? field.to_sym
-          end
-        end
-
-        def request_url(url)
-          @class_request_url = url
-        end
-
-        def list_item(item)
-          @class_list_item = item
-        end
-
-        def class_response_list(item)
-          @class_response_list = item
-        end
-
-        def build_errors(xml)
-          unless xml.root.nil?
-            if xml.search('errors').any?
-              errors = xml.children.css("error").map { |e| ErrorInfo.new(e) }
-            else
-              nil
+          elsif (!xml.root.child.nil?) &&
+              (xml.root.child.name.eql? "errors")
+            errors = xml.root.child.css("error").map() do |e|
+              ErrorInfo.new(e)
             end
           end
         end
+
+        result = Saasu::DeleteResult.new(errors.nil? ? xml.root : nil)
+
+        result.errors = errors
+        result
+
+        #Saasu::DeleteResult.new(xml.root)
+      end
+
+      def query_string(options = {})
+        options = defaults[:query_options].merge(options)
+        options = auth_params().merge(options)
+        url_encode_hash(options)
+      end
+
+      def auth_params()
+        {:wsaccesskey => api_key, :fileuid => file_uid}
+      end
+
+      def url_encode_hash(hash = {})
+        hash.map { |k, v| "#{k.to_s.gsub(/_/, "")}=#{(v.is_a? Date) ? v.to_saasu_iso8601 : v}" }.join("&")
+      end
+
+      def request_path(options = {}, all = true)
+        path = options[:request_url] || (all ? defaults[:collection_name].sub(/Item/, "") : defaults[:resource_name])
+        options.delete(:request_url)
+        ENDPOINT + "/#{path}?#{query_string(options)}"
+      end
+
+      def task_path()
+        ENDPOINT + "/Tasks?#{url_encode_hash(auth_params())}"
+      end
+
+      def klass_name()
+        self.name.split("::")[1].camelize(:lower)
+      end
+
+      def required_fields(fields, opts = {:only => :all})
+        @class_required ||= {}
+        @class_required[opts[:only]] ||= []
+        fields.each do |field|
+          field = field.underscore
+          @class_required[opts[:only]] << field if instance_methods.include? field.to_sym
+        end
+      end
+
+      def request_url(url)
+        @class_request_url = url
+      end
+
+      def list_item(item)
+        @class_list_item = item
+      end
+
+      def class_response_list(item)
+        @class_response_list = item
+      end
+
+      def build_errors(xml)
+        unless xml.root.nil?
+          if xml.search('errors').any?
+            errors = xml.children.css("error").map { |e| ErrorInfo.new(e) }
+          else
+            nil
+          end
+        end
+      end
     end
 
   end
 
 end
 
-class MissingFieldError < StandardError; end
+class MissingFieldError < StandardError;
+end
