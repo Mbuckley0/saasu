@@ -55,7 +55,9 @@ module Saasu
               send("#{child.name.underscore}=", child) unless child.child.nil?
             end
           else
-            puts "unexpected text node #{child.name} with content #{child.content}!"
+            unless child.blank?
+              puts "unexpected text node #{child.name} with content #{child.content}!"
+            end
           end
         end
       end
