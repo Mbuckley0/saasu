@@ -29,6 +29,7 @@ module Saasu
               "industryUid" => :integer,
               "postalAddress" => :PostalAddress,
               "otherAddress" => :PostalAddress,
+              "country" => :string,
               "street" => :string,
               "city" => :string,
               "postCode" => :string,
